@@ -15,7 +15,6 @@ const int stepperPostCircum = 18.06;
 const int turntableCircum = 1225;
 
 const int shotsPerRevolution = 45;
-const float rotationSpeed = 0.008;
 
 
 // Create global object to communicate with Dragon Stop Motion
@@ -47,6 +46,7 @@ void loop() {
   // Currently capturing
   if (state == IDLE) {
     digitalWrite(ledPin, LOW);
+    // Enable stepper motor sleep to reduce heat and power consumption while idle
     digitalWrite(sleepPin, LOW);
     buttonState = digitalRead(buttonPin);
     if (buttonState == HIGH) {
@@ -55,7 +55,9 @@ void loop() {
     }
   }
   else {
+    // Turn on LED while capturing a sequence
     digitalWrite(ledPin, HIGH);
+    // Disable stepper motor sleep
     digitalWrite(sleepPin, HIGH);
   }
   
@@ -82,8 +84,6 @@ void loop() {
   
   
   if (state == MOVING) {
-    // rotateDeg(360/shotsPerRevolution, rotationSpeed);
-    
     rotateDeg((360/shotsPerRevolution) * (turntableCircum / stepperPostCircum), 0.5);
     
     if (frame < shotsPerRevolution) {
