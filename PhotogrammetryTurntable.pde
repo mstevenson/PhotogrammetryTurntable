@@ -6,8 +6,8 @@
 #define MOVING 3
 
 const int buttonPin = 3;
-const int stepPin = 4;
-const int dirPin = 5;
+const int dirPin = 4;
+const int stepPin = 5;
 const int sleepPin = 6;
 const int ledPin = 13;
 
