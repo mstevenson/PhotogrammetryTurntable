@@ -43,62 +43,74 @@ void setup() {
 
 void loop() {
 
-  // Currently capturing
-  if (state == IDLE) {
-    digitalWrite(ledPin, LOW);
-    // Enable stepper motor sleep to reduce heat and power consumption while idle
-    digitalWrite(sleepPin, LOW);
-    buttonState = digitalRead(buttonPin);
-    if (buttonState == HIGH) {
-      state = CAPTURING;
-      return;
-    }
+  switch (state) {
+    case IDLE:
+      idle();
+      break;
+    case CAPTURING:
+      capture();
+      break;
+    case IMPORTING:
+      import();
+      break;
+    case MOVING:
+      move();
+      break;
   }
-  else {
+
+  if (state != IDLE) {
     // Turn on LED while capturing a sequence
     digitalWrite(ledPin, HIGH);
     // Disable stepper motor sleep
     digitalWrite(sleepPin, HIGH);
   }
   
-  
-  if (state == CAPTURING) {
-    dsm.shootFrame(1);
-    state = IMPORTING;
-    return;
-  }
-  
-  
-  if (state == IMPORTING) {
-    // Wait for DSM to finish capturing the frame
-    int cmd = dsm.processSerial();
-    if (cmd != DRAGON_CC_MSG) {
-      return;
-    }
-    // Once capture is complete, move the stepper motor
-    else {
-      state = MOVING;
-      return;
-    }
-  }
-  
-  
-  if (state == MOVING) {
-    rotateDeg((360/shotsPerRevolution) * (turntableCircum / stepperPostCircum), 0.5);
-    
-    if (frame < shotsPerRevolution) {
-      frame++;
-      state = CAPTURING;
-    }
-    else {
-      frame = 1;
-      state = IDLE;
-    }
-    return;
-  }
-  
 }
 
+
+void idle()
+{
+  digitalWrite(ledPin, LOW);
+  // Enable stepper motor sleep to reduce heat and power consumption while idle
+  digitalWrite(sleepPin, LOW);
+  buttonState = digitalRead(buttonPin);
+  if (buttonState == HIGH) {
+    state = CAPTURING;
+  }
+}
+
+
+void capture()
+{
+  dsm.shootFrame(1);
+  state = IMPORTING;
+}
+
+
+void import()
+{
+  // Wait for DSM to finish capturing the frame
+  int cmd = dsm.processSerial();
+  if (cmd != DRAGON_CC_MSG) {
+    return;
+  }
+  // Once capture is complete, move the stepper motor
+  state = MOVING;
+}
+
+
+void move()
+{
+  rotateDeg((360/shotsPerRevolution) * (turntableCircum / stepperPostCircum), 0.5);
+  if (frame < shotsPerRevolution) {
+    frame++;
+    state = CAPTURING;
+  }
+  else {
+    frame = 1;
+    state = IDLE;
+  }
+}
 
 
 
