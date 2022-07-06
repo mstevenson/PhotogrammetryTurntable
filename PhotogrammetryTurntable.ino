@@ -1,4 +1,4 @@
-#include <DragonStopMotion.h>
+#include "DFRemote.h"
 
 #define IDLE 0
 #define CAPTURING 1
@@ -17,8 +17,8 @@ const int turntableCircum = 1225;
 const int shotsPerRevolution = 45;
 
 
-// Create global object to communicate with Dragon Stop Motion
-DragonStopMotion dsm = DragonStopMotion();
+// Create global object to communicate with DragonFrame
+DFRemote df = DFRemote();
 
 int buttonState = 0;
 int frame = 1;
@@ -37,7 +37,7 @@ void setup() {
   pinMode(ledPin, OUTPUT);
   
   // Need to prime it for some reason. It always fails on the first shot.
-  dsm.shootFrame(1);
+  df.shootFrame(1);
 } 
 
 
@@ -82,16 +82,16 @@ void idle()
 
 void capture()
 {
-  dsm.shootFrame(1);
+  df.shootFrame(1);
   state = IMPORTING;
 }
 
 
 void import()
 {
-  // Wait for DSM to finish capturing the frame
-  int cmd = dsm.processSerial();
-  if (cmd != DRAGON_CC_MSG) {
+  // Wait for DF to finish capturing the frame
+  int cmd = df.processSerial();
+  if (cmd != DF_CC_MSG) {
     return;
   }
   // Once capture is complete, move the stepper motor
