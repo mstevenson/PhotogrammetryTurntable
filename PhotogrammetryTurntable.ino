@@ -1,3 +1,4 @@
+#include <AccelStepper.h>
 #include "DFRemote.h"
 
 #define IDLE 0
@@ -5,33 +6,36 @@
 #define IMPORTING 2
 #define MOVING 3
 
+int state = IDLE;
+
 const int buttonPin = 3;
+const int ledPin = 13;
+
+// stepper pins
 const int dirPin = 4;
 const int stepPin = 5;
 const int sleepPin = 6;
-const int ledPin = 13;
 
-//const int stepperPostCircum = 18.06;
-//const int turntableCircum = 1225;
-
-const int shotsPerRevolution = 45;
-
-DFRemote df = DFRemote();
+const int totalFrames = 30;
+const int stepsPerRevolution = 1600;
 
 int buttonState = 0;
-int frame = 1;
+int frame = 0;
 
-int state = IDLE;
+DFRemote df = DFRemote();
+AccelStepper stepper(AccelStepper::DRIVER, stepPin, dirPin);
 
-void setup() {
-  // set up serial port to 57600 kbps
+void setup()
+{
   Serial.begin(57600);
   
   pinMode(buttonPin, INPUT);
-  pinMode(stepPin, OUTPUT);
-  pinMode(dirPin, OUTPUT);
-  pinMode(sleepPin, OUTPUT);
   pinMode(ledPin, OUTPUT);
+
+  stepper.setEnablePin(sleepPin);
+  stepper.setMaxSpeed(1000);
+  stepper.setAcceleration(1000);
+  stepper.disableOutputs();
 }
 
 void loop()
@@ -42,10 +46,12 @@ void loop()
     {
       digitalWrite(ledPin, LOW);
       // Enable stepper motor sleep to reduce heat and power consumption while idle
-      digitalWrite(sleepPin, LOW);
+      stepper.disableOutputs();
       buttonState = digitalRead(buttonPin);
       if (buttonState == HIGH)
       {
+        stepper.enableOutputs(); // disable stepper sleep
+        delay(500);
         state = CAPTURING;
       }
       break;
@@ -60,49 +66,28 @@ void loop()
     {
       // Wait for DF to finish capturing the frame
       int cmd = df.processSerial();
-      if (cmd != DF_CC_MSG) {
+      if (cmd != DF_CC_MSG)
+      {
         return;
       }
-      // Once capture is complete, move the stepper motor
       state = MOVING;
       break;
     }
     case MOVING:
     {
-      //rotateDeg((360/shotsPerRevolution) * (turntableCircum / stepperPostCircum), 0.5);
-      rotateDeg(360/shotsPerRevolution, 0.02); // direct drive
-      if (frame < shotsPerRevolution) {
+      if (frame < totalFrames)
+      {
         frame++;
+        stepper.runToNewPosition(frame * (stepsPerRevolution/totalFrames));
         state = CAPTURING;
       }
       else
       {
-        frame = 1;
+        frame = 0;
+        stepper.runToNewPosition(0);
         state = IDLE;
       }
       break;
     }
-  }
-
-  if (state != IDLE)
-  {
-    // Turn on LED while capturing a sequence
-    digitalWrite(ledPin, HIGH);
-    // Disable stepper motor sleep
-    digitalWrite(sleepPin, HIGH);
-  }
-}
-
-void rotateDeg(float deg, float speed)
-{
-  int steps = abs(deg)*(1/0.225);
-  float usDelay = (1/speed) * 70;
-
-  for(int i=0; i < steps; i++)
-  {
-    digitalWrite(stepPin, HIGH);
-    delayMicroseconds(usDelay); 
-    digitalWrite(stepPin, LOW);
-    delayMicroseconds(usDelay);
   }
 }
